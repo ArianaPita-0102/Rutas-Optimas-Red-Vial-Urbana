@@ -1,22 +1,10 @@
 import time
 from collections import defaultdict
-from importlib import import_module
+from algoritmos import RedVial, UnionFind, Dijkstra, Kruskal
 
-# importamos las clases desde 3_algoritmos.py
-modulo_algoritmos = import_module("2_algoritmos")
-RedVial = modulo_algoritmos.RedVial
-UnionFind = modulo_algoritmos.UnionFind
-Dijkstra = modulo_algoritmos.Dijkstra
-Kruskal = modulo_algoritmos.Kruskal
-
-# cargamos el grafo
 red_vial = RedVial()
 red_vial.cargar_nodos("nodes.csv")
 red_vial.cargar_aristas("edges_limpio.csv")
-
-# ── OBJETIVO 1: alcance vehicular ─────────────────────────────────────────────
-# dijkstra con limite de 5000 metros — contamos cuantos nodos tienen dist[v] <= 5000
-# complejidad: O((V + E) log V)
 
 nodo_origen = list(red_vial.todos_nodos)[0]
 
@@ -39,10 +27,6 @@ if nodo_origen in red_vial.nodos_coords:
 
 print(f"    Nodos alcanzables en <= 5 km: {len(nodos_alcanzables)}")
 print(f"    Tiempo de ejecucion: {tiempo_fin - tiempo_inicio:.4f} segundos\n")
-
-# ── OBJETIVO 2: islas viales con Union-Find ───────────────────────────────────
-# union(u, v) para cada arista — al final cada grupo con el mismo representante es una isla
-# complejidad: O(E · α(V)) ≈ O(E)
 
 tiempo_inicio = time.time()
 
@@ -72,15 +56,9 @@ print(f"    Componente gigante:    {len(componentes_conectadas[0])} nodos")
 print(f"    Islas pequeñas:        {len(componentes_conectadas) - 1}")
 print(f"    Tiempo de ejecucion:   {tiempo_fin - tiempo_inicio:.4f} segundos\n")
 
-# ── OBJETIVO 3: diametro vial ─────────────────────────────────────────────────
-# dijkstra desde 500 nodos de muestra — busco el par con mayor distancia minima
-# hacerlo con los 59357 tardaria horas, la muestra da una buena aproximacion
-# complejidad: O(500 · (V' + E') log V')
-
 componente_gigante = set(componentes_conectadas[0])
 
 adyacencias_distancia_gigante = defaultdict(list)
-adyacencias_tiempo_gigante = defaultdict(list)
 
 for nodo_origen_gigante in componente_gigante:
     for indice in range(len(red_vial.adj_dist[nodo_origen_gigante])):
@@ -91,16 +69,8 @@ for nodo_origen_gigante in componente_gigante:
                 red_vial.adj_dist[nodo_origen_gigante][indice]
             )
 
-for nodo_origen_gigante in componente_gigante:
-    for indice in range(len(red_vial.adj_time[nodo_origen_gigante])):
-        nodo_destino = red_vial.adj_time[nodo_origen_gigante][indice][1]
-
-        if nodo_destino in componente_gigante:
-            adyacencias_tiempo_gigante[nodo_origen_gigante].append(
-                red_vial.adj_time[nodo_origen_gigante][indice]
-            )
-
-nodos_muestra = list(componente_gigante)[:500]
+# Para pruebas iniciales del avance se utiliza una muestra reducida de 50 nodos.
+nodos_muestra = list(componente_gigante)[:50]
 
 tiempo_inicio = time.time()
 
@@ -122,7 +92,7 @@ for nodo_inicio in nodos_muestra:
 
 tiempo_fin = time.time()
 
-print(f"[3] Diametro vial (muestra 500 nodos)")
+print(f"[3] Diametro vial (muestra 5 nodos)")
 print(
     f"    Par mas distante: "
     f"{par_nodos_mas_lejanos[0]} -> {par_nodos_mas_lejanos[1]}"
@@ -143,10 +113,6 @@ if par_nodos_mas_lejanos[1] in red_vial.nodos_coords:
 print(f"    Distancia: {distancia_maxima / 1000:.2f} km")
 print(f"    Tiempo de ejecucion: {tiempo_fin - tiempo_inicio:.4f} segundos\n")
 
-# ── OBJETIVO 4: kruskal con Union-Find ───────────────────────────────────────
-# MST sobre la componente gigante — menor distancia total para conectarla toda
-# complejidad: O(E log E) + O(E · α(V))
-
 tiempo_inicio = time.time()
 
 algoritmo_kruskal = Kruskal()
@@ -164,37 +130,3 @@ print(f"    Nodos cubiertos:     {len(componente_gigante)}")
 print(f"    Aristas en MST:      {cantidad_aristas_mst}")
 print(f"    Distancia total:     {distancia_total_mst / 1000:.2f} km")
 print(f"    Tiempo de ejecucion: {tiempo_fin - tiempo_inicio:.4f} segundos\n")
-
-# ── BONUS: distancia vs tiempo ────────────────────────────────────────────────
-# dijkstra dos veces entre el mismo par — una por km y otra por minutos
-# complejidad: O(2 · (V' + E') log V')
-
-nodo_inicio = par_nodos_mas_lejanos[0]
-nodo_destino = par_nodos_mas_lejanos[1]
-
-dijkstra_por_distancia = Dijkstra(adyacencias_distancia_gigante)
-dijkstra_por_tiempo = Dijkstra(adyacencias_tiempo_gigante)
-
-tiempo_inicio_distancia = time.time()
-distancias_minimas = dijkstra_por_distancia.ejecutar(nodo_inicio)
-tiempo_fin_distancia = time.time()
-
-tiempo_inicio_tiempo = time.time()
-tiempos_minimos = dijkstra_por_tiempo.ejecutar(nodo_inicio)
-tiempo_fin_tiempo = time.time()
-
-print(f"[BONUS] Distancia vs Tiempo — nodos {nodo_inicio} -> {nodo_destino}")
-
-print(f"    Ruta optima por DISTANCIA:")
-print(f"      Distancia:       {distancias_minimas[nodo_destino] / 1000:.2f} km")
-print(
-    f"      Tiempo calculo:  "
-    f"{tiempo_fin_distancia - tiempo_inicio_distancia:.4f} seg"
-)
-
-print(f"    Ruta optima por TIEMPO:")
-print(f"      Tiempo estimado: {tiempos_minimos[nodo_destino]:.2f} min")
-print(
-    f"      Tiempo calculo:  "
-    f"{tiempo_fin_tiempo - tiempo_inicio_tiempo:.4f} seg"
-)
