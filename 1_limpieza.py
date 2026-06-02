@@ -15,6 +15,14 @@ aristas["oneway"] = aristas["oneway"].apply(
     lambda v: 1 if str(v).strip() in ["1","T","yes","true","oneway"] else 0
 )
 
+def limpiar_velocidad(v):
+    try:
+        return float(str(v).replace("km/h", "").strip())
+    except:
+        return 0
+
+aristas["maxspeed"] = aristas["maxspeed"].apply(limpiar_velocidad)
+
 vel = {"motorway":100,"motorway_link":80,"trunk":80,"trunk_link":60,
        "primary":60,"primary_link":50,"secondary":50,"secondary_link":40,
        "tertiary":40,"tertiary_link":30,"residential":30,
@@ -38,7 +46,7 @@ aristas.to_csv("edges_limpio.csv", index=False)
 print(f"\n=== IMPACTO DE LIMPIEZA ===")
 print(f"Aristas originales:         588485")
 print(f"Eliminadas por tipo de via: {588485 - 336553}")
-print(f"Eliminadas por duplicado:   198")
+print(f"Eliminadas por duplicado:   {antes - len(aristas)}")
 print(f"Aristas finales:            {len(aristas)}")
 print(f"Porcentaje descartado:      {(1 - len(aristas)/588485)*100:.1f}%")
 print(f"Guardado: edges_limpio.csv")

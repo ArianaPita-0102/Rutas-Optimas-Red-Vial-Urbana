@@ -42,7 +42,6 @@ class RedVial:
             if fila["oneway"] == 0:
                 self.adyacencia_distancia[nodo_destino].append((metros, nodo_origen))
                 self.adyacencia_tiempo[nodo_destino].append((minutos, nodo_origen))
-                self.lista_aristas.append((metros, nodo_destino, nodo_origen))
 
         print(f"Grafo cargado — nodos: {len(self.conjunto_nodos)}, aristas: {len(tabla_aristas)}\n")
 
@@ -82,6 +81,7 @@ class Dijkstra:
     def ejecutar(self, nodo_origen, limite=None):
         distancia_minima = defaultdict(lambda: float('inf'))
         distancia_minima[nodo_origen] = 0
+        previo = {nodo_origen: None}
 
         heap = [(0, nodo_origen)]
 
@@ -104,18 +104,32 @@ class Dijkstra:
 
                 if nueva_distancia < distancia_minima[nodo_vecino]:
                     distancia_minima[nodo_vecino] = nueva_distancia
+                    previo[nodo_vecino] = nodo_actual
                     heapq.heappush(heap, (nueva_distancia, nodo_vecino))
 
-        return distancia_minima
+        return distancia_minima, previo
+
+    def reconstruir_camino(self, previo, nodo_destino):
+        camino = []
+        nodo_actual = nodo_destino
+        while nodo_actual is not None:
+            camino.append(nodo_actual)
+            nodo_actual = previo.get(nodo_actual)
+        camino.reverse()
+        return camino
 
 
 class Kruskal:
     def ejecutar(self, nodos_gigante, lista_aristas, conjunto_gigante):
-        aristas_gigante = [
-            (metros, origen, destino)
-            for metros, origen, destino in lista_aristas
-            if origen in conjunto_gigante and destino in conjunto_gigante
-        ]
+        visitadas = set()
+        aristas_gigante = []
+
+        for metros, origen, destino in lista_aristas:
+            if origen in conjunto_gigante and destino in conjunto_gigante:
+                clave = tuple(sorted((origen, destino)))
+                if clave not in visitadas:
+                    visitadas.add(clave)
+                    aristas_gigante.append((metros, origen, destino))
 
         aristas_gigante.sort()
 
